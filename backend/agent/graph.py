@@ -44,6 +44,11 @@ def build_question_generator_graph():
 
     # 条件边：clarify 后判断是继续追问还是进入分析
     def route_after_clarify(state: ExamState) -> Literal["analyze", END]:
+        """
+        clarify 节点后的路由逻辑：
+        - status == "clarifying" → END（参数不完整，等待用户补充）
+        - status == "ready" → analyze（参数完整，进入分析阶段）
+        """
         status = state.get("status")
         if status == "clarifying":
             return END  # 暂停等待用户补充信息
