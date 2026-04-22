@@ -52,3 +52,7 @@ class ExamState(TypedDict, total=False):
 
     # 结果
     exam_result: Optional[dict]          # 最终试卷结果
+
+    # 改编题
+    original_question: Optional[dict]    # 原题目（改编题用）
+    adapted_question: Optional[dict]     # 改编后的题目

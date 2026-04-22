@@ -735,3 +735,66 @@ def validate_node(state: ExamState) -> ExamState:
         "validation_text": validation_text,
         "current_node": "validate",
     }
+
+
+def adapt_node(state: ExamState) -> ExamState:
+    """
+    题目改编节点（adapt）
+
+    职责：
+    1. 接收原题目
+    2. 调用 LLM 进行改编
+    3. 返回改编后的题目
+
+    返回：
+    - adapted_question: 改编后的题目
+    - status: "completed"
+    """
+    original_question = state.get("original_question", {})
+    messages = state.get("messages", [])
+
+    # 构建改编 prompt
+    adapt_prompt = f"""作为 K12 教育出题专家，请根据以下题目进行改编：
+
+原题目：
+{json.dumps(original_question, ensure_ascii=False, indent=2)}
+
+改编要求：
+1. 保持知识点不变
+2. 改变题目的具体数值或情境
+3. 确保答案与原题目不同
+4. 保持难度与原题目相近
+5. 输出格式与原题目一致
+
+请直接输出改编后的题目 JSON，不要输出任何其他内容。"""
+
+    # 调用 LLM
+    llm = get_llm()
+    response = llm.invoke(
+        prompt=adapt_prompt,
+        system_prompt="你是一位专业的 K12 教育出题专家，擅长改编题目。"
+    )
+    adapted_text = response.content.strip()
+
+    # 尝试解析 JSON（去掉可能的 markdown 代码块）
+    try:
+        if adapted_text.startswith("```"):
+            lines = adapted_text.split("\n")
+            adapted_text = "\n".join(lines[1:-1])
+        adapted_question = json.loads(adapted_text)
+    except json.JSONDecodeError:
+        # 如果解析失败，返回原题目
+        adapted_question = original_question
+
+    # 更新消息
+    messages.append({
+        "role": "assistant",
+        "content": "题目改编完成！"
+    })
+
+    return {
+        "messages": messages,
+        "adapted_question": adapted_question,
+        "status": "completed",
+        "current_node": "adapt",
+    }

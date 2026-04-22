@@ -83,6 +83,7 @@ class LeadAgent:
             "status": None,
             "current_skill": skill.name if skill else None,
             "system_prompt": skill.system_prompt if skill else None,
+            "original_question": params.get("original_question"),
         }
 
         # 如果有 session_id，恢复上下文

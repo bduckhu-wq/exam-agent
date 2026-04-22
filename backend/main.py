@@ -370,6 +370,51 @@ async def clarify(req: ClarifyRequest, request: Request):
         }
 
 
+@app.post("/api/exam/adapt")
+async def adapt_question(req: AdaptQuestionRequest, request: Request):
+    """
+    改编题目
+
+    接收一道原题目，调用 question-adaptor skill 进行改编，
+    保持知识点不变，改变数值/情境/难度等。
+    """
+    request_id = request.state.request_id
+    logger = get_logger_instance()
+    agent = get_agent()
+
+    params = {"original_question": req.original_question}
+
+    try:
+        start_time = time.time()
+        result = await agent.arun(
+            "改编题目", params, session_id=req.session_id
+        )
+        total_ms = (time.time() - start_time) * 1000
+
+        adapted = result.get("adapted_question", {})
+
+        logger.log_result(request_id, "success", 1, total_ms)
+
+        return {
+            "code": 0,
+            "message": "改编完成",
+            "request_id": request_id,
+            "session_id": result.get("session_id"),
+            "data": {
+                "original_question": req.original_question,
+                "adapted_question": adapted,
+            },
+        }
+
+    except Exception as e:
+        logger.log_result(request_id, "error", error=str(e))
+        return {
+            "code": 500,
+            "message": f"改编失败: {str(e)}",
+            "request_id": request_id,
+        }
+
+
 # ============ 会话管理接口 ============
 
 @app.get("/api/sessions")
